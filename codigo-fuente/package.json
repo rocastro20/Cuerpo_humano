@@ -1,0 +1,29 @@
+{
+  "name": "cuerpo-adentro",
+  "version": "1.0.0",
+  "description": "Cuerpo adentro: de la arepa al gol. Recurso web interactivo sobre los sistemas del cuerpo humano.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "texturas": "python3 generators/textures.py",
+    "video": "node generators/video/render.mjs",
+    "generar": "npm run texturas && npm run video"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "gsap": "^3.12.5",
+    "lenis": "^1.1.18",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11",
+    "vite-plugin-singlefile": "^2.0.3"
+  }
+}

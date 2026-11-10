@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Escena del video · El viaje del oxígeno</title>
+<style>
+  @font-face { font-family: 'Bricolage'; src: url('../../src/fonts/bricolage-wdth.woff2') format('woff2'); font-weight: 200 800; font-stretch: 75% 100%; }
+  @font-face { font-family: 'Instrument'; font-style: italic; src: url('../../src/fonts/instrument-serif-italic.woff2') format('woff2'); }
+  html, body { margin: 0; background: #120D24; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c" width="960" height="540"></canvas>
+<script>
+/*
+ * Animación 2D por código, determinista: render(t) dibuja el cuadro del segundo t.
+ * generators/video/render.mjs la recorre cuadro a cuadro y FFmpeg la codifica.
+ */
+const W = 960, H = 540;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+const C = {
+  fondo: '#120D24', fondo2: '#1E1640', tinta: '#F4F0FF', suave: '#C9C0E6',
+  o2: '#45D6DE', co2: '#9C95B8', sangreOscura: '#7E2A3E', sangre: '#FF5A55',
+  glucosa: '#FFC94A', musculo: '#7EE5A0', lavanda: '#B49BFF',
+};
+
+// Pseudoaleatorio con semilla: el video siempre sale idéntico.
+function rnd(i) { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const fade = (t, a, b, d = 0.6) => clamp((t - a) / d) * clamp((b - t) / d);
+function mixColor(c1, c2, t) {
+  const p = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
+  const a = p(c1), b = p(c2);
+  return `rgb(${a.map((v, i) => Math.round(lerp(v, b[i], t))).join(',')})`;
+}
+
+function fondo(t) {
+  const g = ctx.createRadialGradient(W * 0.5, H * 0.45, 40, W * 0.5, H * 0.5, W * 0.75);
+  g.addColorStop(0, C.fondo2); g.addColorStop(1, C.fondo);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // polvo flotante
+  ctx.fillStyle = 'rgba(244,240,255,.06)';
+  for (let i = 0; i < 60; i++) {
+    const x = (rnd(i) * W + t * 6 * (0.3 + rnd(i + 9))) % W;
+    const y = (rnd(i + 3) * H + Math.sin(t * 0.4 + i) * 8);
+    ctx.beginPath(); ctx.arc(x, y, 1 + rnd(i + 5) * 1.6, 0, 7); ctx.fill();
+  }
+}
+
+function texto(t, s, x, y, { size = 22, color = C.tinta, align = 'center', weight = 600, font = 'Bricolage', italic = false, alpha = 1, stretch = 100 } = {}) {
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = 'middle';
+  ctx.font = `${italic ? 'italic ' : ''}${weight} ${size}px ${font === 'Bricolage' ? "'Bricolage'" : "'Instrument'"}`;
+  if ('fontStretch' in ctx) ctx.fontStretch = stretch >= 100 ? 'normal' : stretch >= 87 ? 'semi-condensed' : 'condensed';
+  ctx.fillText(s, x, y); ctx.restore();
+}
+
+function etiqueta(t, s, x, y, color, alpha = 1, align = 'left') {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  ctx.font = `600 15px 'Bricolage'`; const w = ctx.measureText(s).width + 20;
+  const bx = align === 'left' ? x : x - w;
+  ctx.fillStyle = 'rgba(18,13,36,.75)'; ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.roundRect(bx, y - 14, w, 28, 14); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = color; ctx.textBaseline = 'middle'; ctx.fillText(s, bx + 10, y + 1); ctx.restore();
+}
+
+function particula(x, y, r, color, glow = true) {
+  if (glow) { ctx.save(); ctx.globalAlpha *= 0.25; ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, r * 2.4, 0, 7); ctx.fill(); ctx.restore(); }
+  ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+}
+
+function globulo(x, y, r, color, ang = 0) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+  ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(0, 0, r, r * 0.78, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(0, 0, r * 0.45, r * 0.32, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.beginPath(); ctx.ellipse(-r * .35, -r * .35, r * .25, r * .12, -0.5, 0, 7); ctx.fill();
+  ctx.restore();
+}
+
+function progreso(t) {
+  const marcas = [0, 6, 14, 22, 32, 40, 45];
+  ctx.save(); ctx.globalAlpha = 0.5;
+  ctx.fillStyle = 'rgba(244,240,255,.12)'; ctx.fillRect(40, 22, W - 80, 3);
+  ctx.fillStyle = C.o2; ctx.fillRect(40, 22, (W - 80) * clamp(t / 45), 3);
+  ctx.restore();
+  texto(t, 'Cuerpo adentro · el viaje del oxígeno', 40, 44, { size: 13, color: C.suave, align: 'left', weight: 500, alpha: 0.7 });
+}
+
+/* ── Escena A · 0–6 s: la respiración ── */
+function escenaA(t) {
+  const a = fade(t, 0, 6.2, 0.5);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  // tráquea y bronquios estilizados
+  const cx = W * 0.7, top = 70;
+  ctx.strokeStyle = 'rgba(69,214,222,.55)'; ctx.lineWidth = 16; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx, top); ctx.lineTo(cx, 230); ctx.stroke();
+  function rama(x, y, ang, len, w, d) {
+    if (d === 0) { particula(x, y, 5, 'rgba(69,214,222,.8)', false); return; }
+    const x2 = x + Math.sin(ang) * len, y2 = y + Math.cos(ang) * len;
+    ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke();
+    rama(x2, y2, ang - 0.45, len * 0.72, w * 0.68, d - 1);
+    rama(x2, y2, ang + 0.45, len * 0.72, w * 0.68, d - 1);
+  }
+  rama(cx, 230, -0.9, 66, 12, 4); rama(cx, 230, 0.9, 66, 12, 4);
+  // aire que entra
+  const insp = clamp((t - 0.8) / 4.5);
+  for (let i = 0; i < 26; i++) {
+    const f = (insp * 1.6 - rnd(i) * 0.9);
+    if (f <= 0 || f >= 1) continue;
+    const y = lerp(10, 225, ease(f)), x = cx + Math.sin(i * 1.7 + t * 2) * lerp(30, 6, f);
+    particula(x, y, 4, C.o2);
+  }
+  ctx.restore();
+  const ta = fade(t, 0.3, 5.4, 0.7);
+  texto(t, 'El viaje', 60, H * 0.40, { size: 74, weight: 800, alpha: ta, align: 'left', stretch: 80 });
+  texto(t, 'del oxígeno', 60, H * 0.40 + 70, { size: 74, weight: 800, alpha: ta, align: 'left', stretch: 80 });
+  texto(t, 'del aire al músculo', 62, H * 0.40 + 132, { align: 'left', size: 26, font: 'Instrument', italic: true, weight: 400, color: C.o2, alpha: ta });
+}
+
+/* ── Escena B · 6–14 s: intercambio en el alvéolo ── */
+function escenaB(t) {
+  const a = fade(t, 6, 14.2, 0.6);
+  if (a <= 0) return;
+  const lt = t - 6;
+  ctx.save(); ctx.globalAlpha = a;
+  const ax = 330, ay = 270, ar = 150;
+  // alvéolo
+  const resp = 1 + Math.sin(lt * 1.4) * 0.03;
+  ctx.fillStyle = 'rgba(69,214,222,.10)'; ctx.strokeStyle = 'rgba(69,214,222,.75)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(ax, ay, ar * resp, 0, 7); ctx.fill(); ctx.stroke();
+  // capilar curvo a la derecha
+  const cap = s => ({ x: 560 + Math.sin(s * Math.PI) * -70, y: lerp(40, 500, s) });
+  ctx.strokeStyle = 'rgba(255,90,85,.35)'; ctx.lineWidth = 64; ctx.lineCap = 'round';
+  ctx.beginPath(); for (let s = 0; s <= 1.001; s += 0.02) { const p = cap(s); s === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y); } ctx.stroke();
+  // glóbulos rojos que bajan y se vuelven brillantes al pasar junto al alvéolo
+  for (let i = 0; i < 9; i++) {
+    const s = ((lt * 0.075 + i / 9) % 1);
+    const p = cap(s);
+    const ox = clamp((s - 0.3) / 0.35);
+    globulo(p.x, p.y, 18, mixColor(C.sangreOscura, C.sangre, ox), s * 2);
+  }
+  // O2 sale del alvéolo hacia el capilar; CO2 sale del capilar hacia el alvéolo
+  for (let i = 0; i < 14; i++) {
+    const f = ((lt * 0.32 + rnd(i)) % 1);
+    const y0 = ay + (rnd(i + 20) - 0.5) * 180;
+    const x = lerp(ax + 40, 520, ease(f));
+    particula(x, y0 + Math.sin(f * 6 + i) * 8, 6, C.o2);
+  }
+  for (let i = 0; i < 8; i++) {
+    const f = ((lt * 0.28 + rnd(i + 50)) % 1);
+    const y0 = ay + (rnd(i + 70) - 0.5) * 160;
+    const x = lerp(520, ax + 30, ease(f));
+    particula(x, y0, 5, C.co2, false);
+  }
+  ctx.restore();
+  etiqueta(t, 'alvéolo', ax - 60, ay - ar - 24, C.o2, fade(t, 6.4, 13.8));
+  etiqueta(t, 'capilar', 640, 90, C.sangre, fade(t, 7, 13.8));
+  etiqueta(t, 'O2 entra a la sangre', 600, 330, C.o2, fade(t, 9.5, 13.8));
+  etiqueta(t, 'CO2 sale', 600, 380, C.co2, fade(t, 10.5, 13.8));
+}
+
+/* ── Escena C · 14–22 s: el corazón izquierdo ── */
+function escenaC(t) {
+  const a = fade(t, 14, 22.2, 0.6);
+  if (a <= 0) return;
+  const lt = t - 14;
+  const lat = Math.pow(Math.max(0, Math.sin(lt * Math.PI * 2 * 1.3)), 8);
+  ctx.save(); ctx.globalAlpha = a;
+  const cx = W * 0.5, cy = 290, k = 1 + lat * 0.06;
+  ctx.translate(cx, cy); ctx.scale(k, k);
+  // silueta de corazón esquemático
+  ctx.fillStyle = 'rgba(255,90,85,.16)'; ctx.strokeStyle = 'rgba(255,107,102,.9)'; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, 150);
+  ctx.bezierCurveTo(-170, 40, -170, -110, -60, -110);
+  ctx.bezierCurveTo(-20, -110, 0, -80, 0, -60);
+  ctx.bezierCurveTo(0, -80, 20, -110, 60, -110);
+  ctx.bezierCurveTo(170, -110, 170, 40, 0, 150);
+  ctx.fill(); ctx.stroke();
+  // tabique
+  ctx.strokeStyle = 'rgba(255,107,102,.6)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]);
+  ctx.beginPath(); ctx.moveTo(0, -60); ctx.lineTo(0, 140); ctx.stroke(); ctx.setLineDash([]);
+  // aorta
+  ctx.strokeStyle = 'rgba(255,90,85,.85)'; ctx.lineWidth = 22; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(30, -70); ctx.bezierCurveTo(30, -200, 160, -200, 170, -120); ctx.stroke();
+  ctx.restore();
+  // sangre que entra desde los pulmones (izquierda de la pantalla = lado izquierdo del cuerpo visto de frente: lo dibujamos a la derecha del corazón)
+  ctx.save(); ctx.globalAlpha = a;
+  for (let i = 0; i < 10; i++) {
+    const f = ((lt * 0.22 + i / 10) % 1);
+    let x, y;
+    if (f < 0.35) { const g = f / 0.35; x = lerp(W - 40, cx + 70, g); y = lerp(150, cy - 40, g); }
+    else if (f < 0.6) { const g = (f - 0.35) / 0.25; x = cx + 70 - g * 20; y = lerp(cy - 40, cy + 80, g); }
+    else { const g = (f - 0.6) / 0.4; const u = ease(g); x = lerp(cx + 30, cx + 170, u); y = cy - 70 - Math.sin(u * Math.PI) * 130 + u * 50; }
+    globulo(x, y, 12, C.sangre, f * 4);
+  }
+  ctx.restore();
+  etiqueta(t, 'desde los pulmones', W - 40, 120, C.o2, fade(t, 14.5, 21.8), 'right');
+  etiqueta(t, 'lado izquierdo', cx + 100, cy + 30, C.sangre, fade(t, 15.2, 21.8));
+  etiqueta(t, 'aorta: hacia el cuerpo', cx + 130, cy - 200, C.sangre, fade(t, 18.2, 21.8));
+  texto(t, '♥', 70, H - 120, { size: 30, color: C.sangre, alpha: a * (0.4 + lat * 0.6), align: 'left' });
+}
+
+/* ── Escena D · 22–32 s: arterias, glucosa y pierna ── */
+function escenaD(t) {
+  const a = fade(t, 22, 32.2, 0.6);
+  if (a <= 0) return;
+  const lt = t - 22;
+  const pan = ease(clamp(lt / 9)) * 260;
+  ctx.save(); ctx.globalAlpha = a; ctx.translate(0, -pan);
+  const ax = 480;
+  // arteria principal
+  ctx.strokeStyle = 'rgba(255,90,85,.32)'; ctx.lineWidth = 46; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(ax, 40); ctx.lineTo(ax, 420); ctx.bezierCurveTo(ax, 520, ax + 80, 560, ax + 90, 700); ctx.stroke();
+  // rama del intestino (glucosa)
+  ctx.strokeStyle = 'rgba(255,201,74,.35)'; ctx.lineWidth = 26;
+  ctx.beginPath(); ctx.moveTo(150, 250); ctx.bezierCurveTo(300, 250, 380, 270, ax - 10, 300); ctx.stroke();
+  // pierna estilizada
+  ctx.fillStyle = 'rgba(126,229,160,.16)'; ctx.strokeStyle = 'rgba(126,229,160,.8)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect(ax + 20, 520, 150, 280, 70); ctx.fill(); ctx.stroke();
+  // glóbulos rojos
+  const camino = f => {
+    if (f < 0.55) return { x: ax + Math.sin(f * 20) * 3, y: lerp(40, 420, f / 0.55) };
+    const g = (f - 0.55) / 0.45; return { x: lerp(ax, ax + 90, ease(g)), y: lerp(420, 700, g) };
+  };
+  for (let i = 0; i < 16; i++) {
+    const f = ((lt * 0.11 + i / 16) % 1); const p = camino(f);
+    globulo(p.x, p.y, 14, C.sangre, f * 6 + i);
+  }
+  // glucosa que entra a la arteria
+  const g0 = clamp((lt - 0.5) / 1.2);
+  for (let i = 0; i < 10; i++) {
+    const f = ((lt * 0.2 + rnd(i + 80)) % 1);
+    if (f * g0 <= 0) continue;
+    let x, y;
+    if (f < 0.5) { const u = f / 0.5; x = lerp(150, ax - 10, u); y = lerp(250, 300, u * u); }
+    else { const p = camino(lerp(0.4, 1, (f - 0.5) / 0.5)); x = p.x + 18; y = p.y; }
+    particula(x, y, 6, C.glucosa);
+  }
+  ctx.restore();
+  etiqueta(t, 'arteria', ax + 40, 120 - pan, C.sangre, fade(t, 22.4, 31.6));
+  etiqueta(t, 'glucosa de la arepa', 140, 210 - pan, C.glucosa, fade(t, 23, 31.6));
+  etiqueta(t, 'músculo de la pierna', ax + 190, 600 - pan, C.musculo, fade(t, 27.4, 31.6));
+}
+
+/* ── Escena E · 32–40 s: la célula muscular y la patada ── */
+function escenaE(t) {
+  const a = fade(t, 32, 40.3, 0.6);
+  if (a <= 0) return;
+  const lt = t - 32;
+  const contr = ease(clamp((lt - 5) / 1.2)) * (1 - ease(clamp((lt - 7) / 0.8)));
+  ctx.save(); ctx.globalAlpha = a;
+  const cx = 400, cy = 280, w = 440 * (1 - contr * 0.18), h = 190;
+  ctx.fillStyle = 'rgba(126,229,160,.12)'; ctx.strokeStyle = 'rgba(126,229,160,.85)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect(cx - w / 2, cy - h / 2, w, h, 90); ctx.fill(); ctx.stroke();
+  ctx.save(); ctx.beginPath(); ctx.roundRect(cx - w / 2, cy - h / 2, w, h, 90); ctx.clip();
+  ctx.strokeStyle = 'rgba(126,229,160,.28)'; ctx.lineWidth = 4;
+  const n = 14; for (let i = 0; i < n; i++) { const x = cx - w / 2 + (i + 0.5) * w / n; ctx.beginPath(); ctx.moveTo(x, cy - h / 2); ctx.lineTo(x, cy + h / 2); ctx.stroke(); }
+  ctx.restore();
+  // entran O2 y glucosa, se encuentran y liberan energía
+  for (let i = 0; i < 12; i++) {
+    const f = ((lt * 0.35 + rnd(i + 120)) % 1);
+    const izq = i % 2 === 0;
+    const x = izq ? lerp(cx - w / 2 - 80, cx - 20, ease(f)) : lerp(cx + w / 2 + 80, cx + 20, ease(f));
+    const y = cy + (rnd(i + 140) - 0.5) * 120 * (1 - f);
+    particula(x, y, 6, izq ? C.o2 : C.glucosa);
+  }
+  for (let i = 0; i < 18; i++) {
+    const f = ((lt * 0.5 + rnd(i + 200)) % 1);
+    const ang = rnd(i + 220) * 7;
+    const r = f * 90;
+    ctx.save(); ctx.globalAlpha *= (1 - f);
+    particula(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r * 0.6, 3.5, '#FFF4C2');
+    ctx.restore();
+  }
+  ctx.restore();
+  etiqueta(t, 'O2', cx - w / 2 - 70, cy - 70, C.o2, fade(t, 32.4, 36.6));
+  etiqueta(t, 'glucosa', cx + w / 2 + 70, cy - 70, C.glucosa, fade(t, 32.4, 36.6), 'right');
+  etiqueta(t, 'energía', cx - 40, cy + h / 2 + 34, '#FFF4C2', fade(t, 33.4, 36.8));
+  // pierna que patea y balón
+  const k = ease(clamp((lt - 5.2) / 0.7));
+  ctx.save(); ctx.globalAlpha = a * fade(t, 36.6, 40.3, 0.4);
+  ctx.translate(760, 170); ctx.rotate(lerp(0.5, -0.55, k));
+  ctx.fillStyle = 'rgba(126,229,160,.25)'; ctx.strokeStyle = C.musculo; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect(-24, 0, 48, 230, 24); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  const bf = clamp((lt - 5.8) / 1.6);
+  if (t > 36.6 && t < 40.4) {
+    const bx = lerp(810, 1000, ease(bf)), by = 410 - Math.sin(bf * Math.PI) * 140;
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(bx, by); ctx.rotate(bf * 8);
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 22, 0, 7); ctx.fill();
+    ctx.fillStyle = '#120D24'; ctx.beginPath();
+    for (let i = 0; i < 5; i++) { const an = i / 5 * Math.PI * 2 - Math.PI / 2; ctx.lineTo(Math.cos(an) * 8, Math.sin(an) * 8); } ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* ── Escena F · 40–45 s: cierre ── */
+function escenaF(t) {
+  const a = fade(t, 40, 46, 0.6);
+  if (a <= 0) return;
+  const lt = t - 40;
+  const chip = (s, x, color, d) => { const al = a * clamp((lt - d) / 0.4); etiquetaGrande(s, x, H * 0.42, color, al); };
+  chip('oxígeno', W * 0.5 - 300, C.o2, 0.1);
+  texto(t, '+', W * 0.5 - 170, H * 0.42, { size: 40, alpha: a * clamp((lt - 0.3) / 0.4) });
+  chip('glucosa', W * 0.5 - 70, C.glucosa, 0.4);
+  texto(t, '=', W * 0.5 + 62, H * 0.42, { size: 40, alpha: a * clamp((lt - 0.6) / 0.4) });
+  chip('energía', W * 0.5 + 180, '#FFF4C2', 0.8);
+  texto(t, 'para moverte', W * 0.5, H * 0.42 + 70, { size: 34, font: 'Instrument', italic: true, weight: 400, color: C.suave, alpha: a * clamp((lt - 1.2) / 0.5) });
+  const g = ease(clamp((lt - 1.6) / 0.6));
+  texto(t, '¡Gol!', W * 0.5, H * 0.24, { size: lerp(20, 64, g), weight: 800, color: C.musculo, alpha: a * g, stretch: 75 });
+}
+function etiquetaGrande(s, x, y, color, alpha) {
+  ctx.save(); ctx.globalAlpha = alpha; ctx.font = `700 30px 'Bricolage'`;
+  const w = ctx.measureText(s).width + 40;
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.fillStyle = 'rgba(18,13,36,.6)';
+  ctx.beginPath(); ctx.roundRect(x - w / 2, y - 28, w, 56, 28); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, x, y + 2); ctx.restore();
+}
+
+window.render = function (t) {
+  ctx.globalAlpha = 1;
+  fondo(t);
+  escenaA(t); escenaB(t); escenaC(t); escenaD(t); escenaE(t); escenaF(t);
+  progreso(t);
+};
+window.listo = document.fonts.ready.then(() => Promise.all([
+  document.fonts.load("700 30px 'Bricolage'"), document.fonts.load("italic 30px 'Instrument'"),
+]));
+window.render(0);
+</script>
+</body>
+</html>

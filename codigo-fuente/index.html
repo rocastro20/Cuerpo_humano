@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#120D24">
+  <title>Cuerpo adentro · De la arepa al gol</title>
+  <meta name="description" content="Viaje interactivo por cinco sistemas del cuerpo humano para estudiantes de grados 6.° y 7.° del Colegio Universidad Libre.">
+  <!--SCRIPTS_CLASICOS-->
+</head>
+<body>
+  <a class="saltar" href="#contenido">Saltar al contenido</a>
+
+  <!-- Capa 1: el nombre gigante de la parada, detrás del objeto 3D -->
+  <div id="palabra" aria-hidden="true"><span></span></div>
+
+  <!-- Capa 2: escena 3D -->
+  <canvas id="escena" role="img" aria-label="Escena 3D: cinco órganos estilizados que forman la silueta de un cuerpo. Todo su contenido está también en el texto de la página."></canvas>
+
+  <!-- Capa 3: contenido desplazable (se construye desde src/content.js) -->
+  <main id="contenido" tabindex="-1"></main>
+
+  <!-- Capa 4: HUD -->
+  <div id="hud"></div>
+  <div id="subtitulos" role="status" aria-live="polite"></div>
+  <div id="aviso" role="status" aria-live="polite"></div>
+  <div id="cursor" aria-hidden="true"></div>
+
+  <!-- Capa 5: carga -->
+  <div id="cargador" role="dialog" aria-modal="true" aria-labelledby="cargador-titulo"></div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
