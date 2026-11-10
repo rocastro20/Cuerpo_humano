@@ -5,10 +5,12 @@ corazón + destellos de energía + patada y acorde final.
 
 Uso: python3 generators/video/audio.py salida.wav
 """
+import os
 import sys
 import wave
 
 import numpy as np
+import soundfile as sf
 
 SR = 44100
 DUR = 45.0
@@ -99,6 +101,21 @@ mix[i0 : i0 + n] += lowpass(rng.normal(0, 1, n), 0.25) * np.exp(-np.arange(n) / 
 # Acorde final (40.5 s)
 for m in (62, 66, 69, 74):
     mix += 0.05 * np.sin(2 * np.pi * nota(m) * t) * env(40.5, DUR, 0.05, 2.5) * np.exp(-np.clip(t - 40.5, 0, None) * 0.35)
+
+# ── Voz: lee cada subtítulo en su momento (Kokoro, generators/voz.py) ──
+VOZ_JSON = os.environ.get('VOZ_VIDEO_JSON')
+if VOZ_JSON and os.path.exists(VOZ_JSON):
+    import json
+    from scipy.signal import resample_poly
+    mix *= 0.38  # el ambiente baja para que la voz mande
+    for seg in json.load(open(VOZ_JSON)):
+        v, vsr = sf.read(seg['wav'], dtype='float32')
+        if vsr != SR:
+            v = resample_poly(v, SR, vsr).astype(np.float32)
+        i0 = int(seg['ini'] * SR)
+        n = min(len(v), N - i0)
+        if n > 0:
+            mix[i0:i0 + n] += v[:n] * 0.95
 
 mix *= 0.9 / max(1e-6, np.max(np.abs(mix)))
 pcm = (mix * 32767).astype(np.int16)

@@ -12,13 +12,13 @@ LEEME.md          Este archivo
 
 ## Abrir y publicar
 
-**Sin instalar nada:** haga doble clic en `sitio/index.html`. Todo va dentro del archivo: código, fuentes, texturas y video. No necesita internet, salvo para la voz de Google en Chrome.
+**Sin instalar nada:** haga doble clic en `sitio/index.html`. Código, fuentes, texturas, narración y el video del oxígeno van dentro del archivo; los retratos nítidos y el video de Canva van en las carpetas `retratos/` y `videos/` de al lado. No necesita internet.
 
-**En internet:** suba `sitio/index.html` a cualquier hosting estático. Tres opciones probadas:
+**En internet:** suba la carpeta `sitio/` completa a cualquier hosting estático. Tres opciones probadas:
 
-1. **GitHub Pages.** Cree un repositorio, suba `index.html` y active Pages en *Settings → Pages*.
+1. **GitHub Pages.** Cree un repositorio, suba el contenido de `sitio/` y active Pages en *Settings → Pages*.
 2. **Netlify Drop.** Arrastre la carpeta `sitio/` a app.netlify.com/drop.
-3. **Servidor del colegio.** Copie `index.html` a cualquier carpeta pública.
+3. **Servidor del colegio.** Copie el contenido de `sitio/` a cualquier carpeta pública.
 
 Con el enlace publicado puede generar un código QR para que los estudiantes entren desde el celular.
 
@@ -87,17 +87,26 @@ Pila técnica: Vite, Three.js, GSAP, Lenis y vite-plugin-singlefile. Las fuentes
 
 ## Narración
 
-Por defecto se lee con la voz en español del dispositivo (Web Speech API); en Chrome suelen ser voces de Google. Si el navegador no tiene voz en español, aparecen solo los subtítulos, al ritmo de 150 palabras por minuto.
+La narración va **grabada dentro del archivo** con la voz neuronal **Kokoro** (modelo abierto, voz en español «ef_dora»), así suena igual en Chrome, Firefox, Safari o Edge, sin depender de la voz del sistema. Cada frase lleva su tiempo exacto, de modo que los subtítulos van sincronizados. Los MP3 sueltos están en `codigo-fuente/medios-generados/narracion/`.
 
-**Para usar audios propios**, por ejemplo hechos con Gemini TTS, agregue `audio: 'narracion-digerir.mp3'` al bloque correspondiente en `content.js` (`introduccion`, cada parada o `conclusion`). Los subtítulos se sincronizan solos con la duración del audio.
+Para regenerarla (por ejemplo, tras cambiar el guion): `python3 generators/voz.py`. Necesita `pip install kokoro-onnx soundfile` y los dos archivos del modelo (`kokoro-v1.0.onnx` y `voices-v1.0.bin`, publicados en github.com/thewh1teagle/kokoro-onnx) en una carpeta `modelos/` junto al proyecto.
+
+**Para usar otra voz**, por ejemplo de Gemini TTS o ElevenLabs, agregue `audio: 'narracion-digerir.mp3'` al bloque correspondiente en `content.js` (`introduccion`, cada parada o `conclusion`) y copie el MP3 junto a `index.html`. Los subtítulos se reparten según la duración del audio.
+
+## Retratos y video hechos con Canva
+
+- **Retratos de Sofía y de las cinco profesionales:** generados con la IA de imágenes de Canva desde la cuenta del equipo, uno por personaje. Van dos veces: una vista previa de 200 px **dentro** de `index.html` (funciona aunque se copie solo ese archivo) y la versión nítida en `sitio/retratos/<nombre>.jpg` (800 px), que la página usa cuando está junto a `index.html` porque `retratosAltaResolucion` está en `true` en `content.js`. Los originales de Canva (1264 px) están en `codigo-fuente/medios-generados/retratos/alta/`.
+- **Video «El gol de Sofía» (35 s):** presentación de 7 páginas creada con la IA de diseño de Canva y exportada a MP4 (1920 × 1080). Está en `sitio/videos/el-gol-de-sofia.mp4` y se reproduce en la conclusión con subtítulos que pone la página, uno por página del video. Si se publica solo `index.html` sin la carpeta `videos/`, la página muestra un aviso con el enlace al diseño en Canva para verlo allí.
+
+> **Importante al publicar:** suba la carpeta `sitio/` completa (`index.html`, `retratos/` y `videos/`), no solo el archivo `index.html`.
 
 ## Equipo y créditos de IA
 
 - **Rodrigo Castro**, Desarrollador Web.
-- **Oscar Espitia**, Diseñador Instruccional.
+- **Óscar Espitia**, Diseñador Instruccional.
 - **Claude (Anthropic)**, asistente de IA. Escribió el guion, el código y los generadores de medios.
 
-Todos los medios se generaron por código; no hay fotografías ni modelos de terceros. La tabla completa, con el prompt usado para cada recurso, está en la sección «Cómo se hizo» del propio sitio.
+Los retratos y el video resumen se generaron con la IA de Canva; el resto de medios, por código. No hay fotografías de personas reales ni modelos 3D de terceros. La tabla completa, con el prompt usado para cada recurso, está en la sección «Cómo se hizo» del propio sitio.
 
 | Recurso | Herramienta |
 |---|---|
@@ -105,9 +114,11 @@ Todos los medios se generaron por código; no hay fotografías ni modelos de ter
 | Escena 3D | Claude · Three.js procedural |
 | Texturas | Claude · Python (NumPy) |
 | Retratos, sellos, cursor | Claude · SVG original |
-| Video «El viaje del oxígeno» (45 s) | Claude · canvas + Playwright + FFmpeg |
+| Retratos de las profesionales | Canva · IA de generación de imágenes |
+| Video «El gol de Sofía» | Canva · IA de diseño, exportado a MP4 |
+| Video «El viaje del oxígeno» (45 s) | Claude · canvas + Playwright + FFmpeg; voz Kokoro |
 | Música y sonificación | Claude · Web Audio API |
-| Voz de la narración | Voz del navegador (en Chrome, Google) |
+| Voz de la narración | Kokoro (modelo abierto), voz «ef_dora» |
 
 ## Fuentes de los datos
 

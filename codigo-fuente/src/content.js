@@ -17,9 +17,11 @@ export const proyecto = {
   // Ruta o data-URI del logo oficial. Vacío = se muestra el nombre en texto.
   // Ver LEEME.md, sección «Cómo agregar el logo».
   logo: '',
+  // true cuando copie las fotos en alta resolución de Canva en sitio/retratos/<id>.jpg (ver LEEME).
+  retratosAltaResolucion: true,
   equipo: [
     { nombre: 'Rodrigo Castro', rol: 'Desarrollador Web' },
-    { nombre: 'Oscar Espitia', rol: 'Diseñador Instruccional' },
+    { nombre: 'Óscar Espitia', rol: 'Diseñador Instruccional' },
   ],
   duracionMinutos: 10,
   // Pulso de referencia para el indicador en vivo cuando el estudiante
@@ -379,10 +381,29 @@ export const quiz = [
 ];
 
 /* ───────────────────────────── Video ──────────────────────────────── */
+/* Video generado con Canva (presentación animada exportada a MP4).
+   El archivo va junto a index.html, en videos/el-gol-de-sofia.mp4. Si falta, la página lo indica. */
+export const videoCanva = {
+  titulo: 'El gol de Sofía: cinco sistemas, un equipo',
+  archivo: 'videos/el-gol-de-sofia.mp4',
+  descripcion: 'Resumen animado del viaje, hecho con la IA de diseño de Canva y exportado a video.',
+  enlaceCanva: 'https://www.canva.com/d/6rFEZ0aOc9CLF1M',
+  // Un subtítulo por página del video; los tiempos se reparten según la duración real del archivo
+  paginas: [
+    'El gol de Sofía. Cinco sistemas, un equipo.',
+    'Digerir: Sofía desayuna una arepa y el sistema digestivo la convierte en nutrientes que pasan a la sangre.',
+    'Respirar: el oxígeno entra por los pulmones, llega a los alvéolos y pasa a la sangre.',
+    'Latir: el corazón bombea sangre con oxígeno y nutrientes hasta los músculos.',
+    'Sentir: los ojos ven el balón, el cerebro decide y los nervios dan la orden.',
+    'Mover: huesos y músculos de la pierna hacen el remate.',
+    '¡Gol! Tu cuerpo es un equipo. Desayunar, moverte y cargar bien la maleta: decisiones de todos los días.',
+  ],
+};
+
 export const video = {
   titulo: 'El viaje del oxígeno: del aire al músculo',
   duracion: 45,
-  descripcion: 'Animación de 45 segundos que muestra el proceso completo, con subtítulos.',
+  descripcion: 'Animación de 45 segundos con narración en voz y subtítulos.',
   // Los subtítulos se crean con JavaScript para que funcionen también en file://
   subtitulos: [
     { ini: 0.5, fin: 5.8, texto: 'El viaje del oxígeno empieza con una respiración.' },
@@ -450,11 +471,27 @@ export const comoSeHizo = {
     },
     {
       recurso: 'Retratos de Sofía y las cinco profesionales',
+      tipo: 'Imagen (fotografía generada)',
+      herramienta: 'Canva · IA de generación de imágenes',
+      como: 'Un prompt por personaje, con edad, oficio, rasgos y color de fondo de su sistema. Se eligió la primera generación de cada uno. La vista previa de 200 px va dentro del archivo y la versión nítida (800 px) en la carpeta retratos/; los originales de 1264 px están en el código fuente y en la cuenta de Canva del equipo.',
+      prompt:
+        'Foto realista de retrato, estilo fotografía documental de escuela: [nombre], [oficio] colombiano/a de unos [edad] años, [piel, cabello], [ropa de su oficio], fondo liso [color del sistema], luz natural suave, encuadre de hombros hacia arriba, mirando a cámara. Sin texto ni logotipos.',
+    },
+    {
+      recurso: 'Bocetos SVG previos de los personajes',
       tipo: 'Ilustración SVG',
       herramienta: 'Claude (Anthropic) · SVG original',
-      como: 'Ilustraciones vectoriales originales generadas por una función parametrizable (src/illustrations.js).',
+      como: 'Primera versión de los retratos, dibujada por código (src/illustrations.js). Se conserva como respaldo si una foto no carga.',
       prompt:
-        'Diseña retratos SVG originales, planos y amables, de una niña futbolista de 11 años y de cinco profesionales de la salud colombianos con diversidad de tonos de piel y peinados, cada uno con un detalle de su oficio y el color de su sistema.',
+        'Diseña retratos SVG originales, planos y amables, de una niña futbolista de 11 años y de cinco profesionales de la salud colombianos con diversidad de tonos de piel y peinados.',
+    },
+    {
+      recurso: 'Video «El gol de Sofía»',
+      tipo: 'Video (presentación animada exportada a MP4)',
+      herramienta: 'Canva · IA de diseño (Magic Design) y exportación a video',
+      como: 'Se generó una presentación de 7 páginas desde un brief, se corrigió una errata en el texto y se exportó como MP4 a 1080p. Los subtítulos los crea JavaScript.',
+      prompt:
+        'Video corto animado (presentación de 7 páginas, 16:9) en español para estudiantes de 10 a 12 años, «El gol de Sofía: cinco sistemas, un equipo», fondo morado oscuro y un color por sistema; una página por sistema con una frase breve y una página final de cierre.',
     },
     {
       recurso: 'Sellos de la bitácora y cursor de glóbulo rojo',
@@ -488,11 +525,18 @@ export const comoSeHizo = {
       prompt: 'Convierte en sonido los resultados de los simuladores: un latido a los lpm calculados y una respiración a la FR medida.',
     },
     {
-      recurso: 'Narración en voz',
-      tipo: 'Audio (voz sintética) con subtítulos',
-      herramienta: 'Voz del navegador (Web Speech API); en Chrome, voz de Google',
-      como: 'El guion se lee frase por frase con la voz en español del dispositivo; cada frase aparece como subtítulo sincronizado. Puede reemplazarse por audios MP3 (ver LEEME).',
-      prompt: 'Lee el guion de cada parada con voz en español latinoamericano, ritmo pausado y subtítulo por frase.',
+      recurso: 'Narración en voz (7 bloques, 9 minutos)',
+      tipo: 'Audio (voz neuronal) con subtítulos',
+      herramienta: 'Kokoro (modelo de voz abierto, ejecutado localmente) · generators/voz.py',
+      como: 'Cada frase del guion se sintetizó con la voz en español «ef_dora», a 0,92 de velocidad, y se registró su tiempo exacto para sincronizar los subtítulos. Los MP3 van incrustados en la página; si faltaran, se usa la voz del navegador.',
+      prompt: 'Lee el guion de cada parada en español latinoamericano, con ritmo pausado y pausas naturales entre frases.',
+    },
+    {
+      recurso: 'Voz del video «El viaje del oxígeno»',
+      tipo: 'Audio',
+      herramienta: 'Kokoro · generators/video/voz_video.py',
+      como: 'Los diez subtítulos del video se sintetizaron con la misma voz y se mezclaron sobre el ambiente sonoro, que bajó de volumen para que la voz mande.',
+      prompt: 'Lee cada subtítulo del video en su momento exacto, con tono claro y pausado.',
     },
     {
       recurso: 'Sitio web y programación',
@@ -547,5 +591,5 @@ export const fuentes = {
 export const certificado = {
   titulo: 'Certificado de expedición',
   texto: 'completó el viaje «Cuerpo adentro: de la arepa al gol» por cinco sistemas del cuerpo humano.',
-  creditos: 'Recurso creado con apoyo de Claude (Anthropic) · Código y medios generados por programación',
+  creditos: 'Hecho con Claude (Anthropic), Canva (imágenes y video) y Kokoro (voz)',
 };

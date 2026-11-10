@@ -158,14 +158,14 @@ export function icono(nombre, color = 'currentColor', tam = 24) {
 /* ── Sello circular de la bitácora ── */
 export function sello(verbo, color, sellado = true, etiqueta = '') {
   const id = `arco-${verbo}`;
-  const texto = (etiqueta || verbo).toUpperCase().split('').join(' ');
+  const texto = (etiqueta || verbo).toUpperCase();
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Sello ${verbo}${sellado ? ', visitado' : ', pendiente'}">
-  <defs><path id="${id}" d="M60 60m-40 0a40 40 0 1 1 80 0a40 40 0 1 1-80 0"/></defs>
+  <defs><path id="${id}" d="M60 60m-43 0a43 43 0 1 1 86 0a43 43 0 1 1-86 0"/></defs>
   <g opacity="${sellado ? 1 : 0.32}" transform="rotate(${sellado ? -8 : 0} 60 60)">
-    <circle cx="60" cy="60" r="54" fill="none" stroke="${color}" stroke-width="3"/>
-    <circle cx="60" cy="60" r="47" fill="none" stroke="${color}" stroke-width="1.2" stroke-dasharray="2 4"/>
-    <text font-family="Bricolage Grotesque Variable, sans-serif" font-size="10" font-weight="700" fill="${color}" letter-spacing="1"><textPath href="#${id}" startOffset="2%">${texto} · ${texto}</textPath></text>
-    <g transform="translate(42 42) scale(1.5)" fill="none" stroke="${color}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${iconos[verbo] || iconos.adentro}</g>
+    <circle cx="60" cy="60" r="55" fill="none" stroke="${color}" stroke-width="3"/>
+    <circle cx="60" cy="60" r="33" fill="${color}" fill-opacity="0.1"/>
+    <text font-family="Bricolage Grotesque Variable, sans-serif" font-size="9.5" font-weight="700" fill="${color}" letter-spacing="2"><textPath href="#${id}" startOffset="0">${texto} · ${texto} · ${texto} ·</textPath></text>
+    <g transform="translate(44.4 44.4) scale(1.3)" fill="none" stroke="${color}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${iconos[verbo] || iconos.adentro}</g>
   </g>
 </svg>`;
 }

@@ -14,7 +14,7 @@ import { crearNarrador } from './audio/narrator.js';
 import { iniciarSimuladores } from './ui/sims.js';
 import { iniciarQuiz } from './ui/quiz.js';
 import { crearBitacora } from './ui/logbook.js';
-import { iniciarVideo } from './video/player.js';
+import { iniciarVideo, iniciarVideoExterno } from './video/player.js';
 import { crearMundo, COLORES_ESTACION } from './scene/world.js';
 import { crearInteraccion } from './scene/interact.js';
 
@@ -28,6 +28,8 @@ const BLOQUES = { inicio: c.introduccion, final: c.conclusion, ...Object.fromEnt
 const SONIDO_SORPRESA = ['crujido', 'burbujas', 'respiro', 'latido', 'chispa', 'estiron', 'gol'];
 
 const estado = { narracion: false, quiz: null, lpm: null, lpmMedido: false };
+
+window.PROYECTO_RETRATOS_ALTA = c.proyecto.retratosAltaResolucion === true;
 
 /* ── Fondo con grano procedural ── */
 if (window.TEXTURAS?.grano) document.body.style.setProperty('--grano', `url(${window.TEXTURAS.grano})`);
@@ -99,6 +101,7 @@ async function iniciar() {
   progreso(0.84, 'Preparando el video…');
   const audio = crearAudio();
   const video = iniciarVideo(main, c.video);
+  iniciarVideoExterno(main, c.videoCanva);
 
   progreso(0.9, 'Buscando una voz en español…');
   await new Promise((r) => {

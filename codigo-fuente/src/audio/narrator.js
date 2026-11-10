@@ -25,7 +25,9 @@ export function crearNarrador({ alSubtitulo, alCambio }) {
       const l = v.lang.toLowerCase().replace('_', '-');
       let p = orden.indexOf(l); p = p < 0 ? 20 : p;
       if (/google/i.test(v.name)) p -= 5;
-      if (/natural|neural|online/i.test(v.name)) p -= 3;
+      if (/natural|neural|online|premium|enhanced|mejorada/i.test(v.name)) p -= 6;
+      if (/m[oó]nica|paulina|sabina|isabela|dalia|elvira|andr[eé]s|jorge|juan|helena|laura|pablo/i.test(v.name)) p -= 2;
+      if (/espeak|compact/i.test(v.name)) p += 10;
       return p;
     };
     return voces.sort((a, b) => puntuar(a) - puntuar(b))[0];
@@ -68,19 +70,49 @@ export function crearNarrador({ alSubtitulo, alCambio }) {
     if (!duracionTotal) temporizadores.push(setTimeout(() => terminar(mi, id), total * 1000 + 400));
   }
 
+  const urls = {};
+  function urlIncrustada(id) {
+    const d = window.NARRACION_DATA;
+    if (!d || !d.audios || !d.audios[id]) return null;
+    if (!urls[id]) {
+      const bin = atob(d.audios[id]);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      urls[id] = URL.createObjectURL(new Blob([bytes], { type: d.mime || 'audio/mpeg' }));
+    }
+    return urls[id];
+  }
+  function porTiempos(tiempos, mi, id) {
+    // Subtítulos sincronizados con los tiempos reales de cada frase
+    const t0 = performance.now();
+    const paso = () => {
+      if (mi !== ficha || !audio) return;
+      const t = audio.currentTime;
+      const c = tiempos.find((s) => t >= s.ini && t < s.fin + 0.35);
+      const texto = c ? c.texto : '';
+      alSubtitulo(texto);
+      temporizadores.push(setTimeout(paso, 120));
+    };
+    paso();
+  }
+
   function decir(id, texto, { audio: urlAudio = null } = {}) {
     detener();
     const mi = ++ficha;
     actual = id;
     alCambio(id, true);
     const lista = frases(texto);
+    const incrustado = window.NARRACION_DATA?.tiempos?.[id] ? urlIncrustada(id) : null;
+    const fuente = urlAudio || incrustado;
 
-    if (urlAudio) {
-      audio = new Audio(urlAudio);
-      audio.addEventListener('loadedmetadata', () => porTiempo(lista, mi, id, audio.duration), { once: true });
+    if (fuente) {
+      audio = new Audio(fuente);
+      const tiempos = !urlAudio && window.NARRACION_DATA?.tiempos?.[id];
+      if (tiempos) porTiempos(tiempos, mi, id);
+      else audio.addEventListener('loadedmetadata', () => porTiempo(lista, mi, id, audio.duration), { once: true });
       audio.addEventListener('ended', () => terminar(mi, id), { once: true });
-      audio.play().catch(() => porTiempo(lista, mi, id));
-      return;
+      audio.play().catch(() => { audio = null; temporizadores.forEach(clearTimeout); temporizadores = []; porTiempo(lista, mi, id); });
+      return 'audio';
     }
     if (!synth || !(voz = voz || elegirVoz())) {
       porTiempo(lista, mi, id);
@@ -91,7 +123,7 @@ export function crearNarrador({ alSubtitulo, alCambio }) {
       if (mi !== ficha) return;
       if (i >= lista.length) return terminar(mi, id);
       const u = new SpeechSynthesisUtterance(lista[i]);
-      u.voice = voz; u.lang = voz.lang; u.rate = 0.98; u.pitch = 1;
+      u.voice = voz; u.lang = voz.lang; u.rate = 0.94; u.pitch = 1.02;
       const frase = lista[i];
       u.onstart = () => { if (mi === ficha) alSubtitulo(frase); };
       u.onend = () => { i++; siguiente(); };
@@ -107,6 +139,7 @@ export function crearNarrador({ alSubtitulo, alCambio }) {
     detener,
     get hablando() { return actual; },
     get tieneVoz() { return Boolean(synth && (voz || elegirVoz())); },
-    get nombreVoz() { return voz ? `${voz.name} (${voz.lang})` : null; },
+    get nombreVoz() { return window.NARRACION_DATA?.voz ? window.NARRACION_DATA.voz : voz ? `${voz.name} (${voz.lang})` : null; },
+    get tieneAudioIncrustado() { return Boolean(window.NARRACION_DATA?.audios); },
   };
 }

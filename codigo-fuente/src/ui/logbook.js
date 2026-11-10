@@ -100,7 +100,7 @@ export function crearBitacora({ c, estado, audio, avisar, alCambiar }) {
       ctx.globalAlpha = sellado ? 1 : 0.25;
       ctx.strokeStyle = p.color; ctx.lineWidth = 4;
       ctx.beginPath(); ctx.arc(x, y0 + 50, 52, 0, Math.PI * 2); ctx.stroke();
-      ctx.setLineDash([3, 7]); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y0 + 50, 42, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+      ctx.globalAlpha *= 0.12; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(x, y0 + 50, 44, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = sellado ? 1 : 0.25;
       ctx.fillStyle = p.color; ctx.font = "700 17px 'Bricolage Grotesque Variable', sans-serif"; ctx.textAlign = 'center';
       ctx.fillText(p.verbo, x, y0 + 57);
       ctx.textAlign = 'left'; ctx.globalAlpha = 1;

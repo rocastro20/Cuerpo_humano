@@ -3,6 +3,16 @@
  */
 import { retratoDe, icono, sello } from '../illustrations.js';
 
+/* Retrato: foto generada con Canva (incrustada) y, si existe junto a index.html, la versión en alta resolución retratos/<id>.jpg */
+export function retratoFoto(id, alt) {
+  const d = (window.RETRATOS_DATA || {})[id];
+  if (!d) return retratoDe(id);
+  const alta = window.PROYECTO_RETRATOS_ALTA; // true cuando retratos/<id>.jpg están junto a index.html (ver LEEME)
+  return alta
+    ? `<img class="foto-retrato" src="retratos/${id}.jpg" alt="${esc(alt)}" width="200" height="200" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=this.dataset.respaldo" data-respaldo="${d.b64}">`
+    : `<img class="foto-retrato" src="${d.b64}" alt="${esc(alt)}" width="200" height="200" loading="lazy" decoding="async">`;
+}
+
 export const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -41,7 +51,7 @@ function encabezado(p, total) {
 
 function caso(p) {
   return `<div class="caso">
-    <div class="retrato">${retratoDe(p.profesional.retrato)}</div>
+    <div class="retrato">${retratoFoto(p.profesional.retrato, `${p.profesional.nombre}, ${p.profesional.oficio}`)}</div>
     <div>
       <span class="quien">${esc(p.profesional.nombre)}</span>
       <span class="oficio">${esc(p.profesional.oficio)}</span>
@@ -214,6 +224,12 @@ export function construirPagina(raiz, c) {
         <textarea id="reflexion" placeholder="Escribe tu decisión. Solo la ves tú."></textarea></div>
       <p class="cierre">${esc(f.cierre)}</p>
       <details><summary>Leer la narración completa</summary><div class="narracion" style="margin-top:10px">${parrafos(f.narracion)}</div></details>
+      <figure class="video video-canva" data-video-canva>
+        <div class="marco"><video data-video-externo playsinline controls preload="metadata" src="${esc(c.videoCanva.archivo)}" aria-describedby="video-canva-desc"></video><div class="sub-video" data-sub-video aria-hidden="true"></div>
+          <div class="video-falta" data-video-falta hidden><b>Video pendiente de copiar</b><span>Descarga «${esc(c.videoCanva.titulo)}» desde Canva y guárdalo como <code>${esc(c.videoCanva.archivo)}</code> junto a index.html.</span><a href="${esc(c.videoCanva.enlaceCanva)}" target="_blank" rel="noopener">Abrir en Canva</a></div></div>
+        <figcaption><span id="video-canva-desc"><b>${esc(c.videoCanva.titulo)}</b> · ${esc(c.videoCanva.descripcion)}</span>
+          <button type="button" class="boton-pildora" data-cc aria-pressed="true">CC subtítulos</button></figcaption>
+      </figure>
       <div class="fila-botones" style="margin-top:20px"><a class="boton-principal" href="#quiz" data-ir="quiz">Ir al quiz</a></div>
     </div>
   </section>`);
@@ -231,7 +247,8 @@ export function construirPagina(raiz, c) {
   const tex = window.TEXTURAS || {};
   const vid = (window.VIDEO_DATA && window.VIDEO_DATA.posters) || {};
   const galeria = [
-    ...['sofia', 'laura', 'andres', 'valentina', 'catalina', 'julian'].map((k) => ({ html: retratoDe(k), pie: `Retrato SVG · ${k === 'sofia' ? 'Sofía' : c.paradas.find((p) => p.profesional.retrato === k)?.profesional.nombre}` })),
+    ...['sofia', 'laura', 'andres', 'valentina', 'catalina', 'julian'].map((k) => { const n = k === 'sofia' ? 'Sofía' : c.paradas.find((p) => p.profesional.retrato === k)?.profesional.nombre; return { html: retratoFoto(k, n), pie: `Retrato · ${n} (IA de imágenes de Canva)` }; }),
+    ...['sofia', 'laura', 'andres', 'valentina', 'catalina', 'julian'].map((k) => ({ html: retratoDe(k), pie: `Boceto SVG previo · ${k === 'sofia' ? 'Sofía' : c.paradas.find((p) => p.profesional.retrato === k)?.profesional.nombre}` })),
     ...[['adentro', '#FFD98A'], ...c.paradas.map((p) => [p.verbo, p.color]), ['gol', '#FFFFFF']].map(([v, col]) => ({ html: sello(v, col, true), pie: `Sello SVG · ${v}`, clase: 'sello-l' })),
     ...Object.entries({ tejido: 'Textura de tejido (ruido de Worley)', arepa: 'Textura de arepa (ruido de valor)', brillo: 'Destello para partículas', grano: 'Grano del fondo' })
       .filter(([k]) => tex[k])

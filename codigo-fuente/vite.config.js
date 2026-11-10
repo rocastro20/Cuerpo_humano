@@ -19,7 +19,9 @@ function scriptsClasicos() {
       handler(html) {
         const tex = leer('textures.js', 'window.TEXTURAS = {};');
         const vid = leer('video-data.js', 'window.VIDEO_DATA = null;');
-        return html.replace('<!--SCRIPTS_CLASICOS-->', `<script>${tex}</script>\n<script>${vid}</script>`);
+        const ret = leer('retratos.js', 'window.RETRATOS_DATA = {};');
+        const nar = leer('narracion.js', 'window.NARRACION_DATA = null;');
+        return html.replace('<!--SCRIPTS_CLASICOS-->', `<script>${tex}</script>\n<script>${ret}</script>\n<script>${nar}</script>\n<script>${vid}</script>`);
       },
     },
   };

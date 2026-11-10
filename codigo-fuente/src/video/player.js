@@ -43,3 +43,32 @@ export function iniciarVideo(raiz, video) {
   });
   return { pausar: () => v.pause() };
 }
+
+/* Video externo (Canva): subtítulos repartidos por páginas según la duración real. */
+export function iniciarVideoExterno(raiz, cfg) {
+  const fig = raiz.querySelector('[data-video-canva]');
+  if (!fig) return;
+  const v = fig.querySelector('[data-video-externo]');
+  const sub = fig.querySelector('[data-sub-video]');
+  const cc = fig.querySelector('[data-cc]');
+  const falta = fig.querySelector('[data-video-falta]');
+  let activos = true;
+  const sinArchivo = () => { falta.hidden = false; v.hidden = true; };
+  if (v.error || (v.networkState === 3 && !v.readyState)) sinArchivo();
+  v.addEventListener('error', sinArchivo, { once: true });
+  v.addEventListener('loadedmetadata', () => { falta.hidden = true; v.hidden = false; }, { once: true });
+  const pintar = () => {
+    if (!activos || !v.duration) { sub.textContent = ''; return; }
+    const n = cfg.paginas.length;
+    const i = Math.min(n - 1, Math.floor((v.currentTime / v.duration) * n));
+    const texto = v.ended ? '' : cfg.paginas[i];
+    if (sub.textContent !== texto) sub.textContent = texto;
+  };
+  let anim = null;
+  const bucle = () => { pintar(); if (!v.paused) anim = requestAnimationFrame(bucle); };
+  v.addEventListener('play', () => { cancelAnimationFrame(anim); bucle(); });
+  v.addEventListener('seeked', pintar);
+  v.addEventListener('timeupdate', pintar);
+  v.addEventListener('ended', () => { sub.textContent = ''; });
+  cc.addEventListener('click', () => { activos = !activos; cc.setAttribute('aria-pressed', String(activos)); pintar(); });
+}
